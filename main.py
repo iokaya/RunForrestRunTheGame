@@ -31,6 +31,7 @@ BOX_WIDTH = 50
 BOX_HEIGHT = 50
 BOX_MARGIN = 2
 BOX_FONT = ("Calibri", 22)
+BUTTON_FONT = ("Calibri", 12)
 BOARD_GRID_ROW_COUNT = 8
 BOARD_GRID_COLUMN_COUNT = 13
 BOARD_TOP_MARGIN = WINDOW_HEIGHT - (BOARD_GRID_ROW_COUNT + 1) * BOX_HEIGHT - (BOARD_GRID_ROW_COUNT + 2) * BOX_MARGIN
@@ -47,17 +48,23 @@ CONFIGURATION_FRAME_ELT_WIDTH = (CONFIGURATION_FRAME_HEADER_WIDTH - 2 * BOX_MARG
 window = tk.Tk()
 # define runner controller
 runner_controller = tk.IntVar()
+runner_controller.set(1)
 # define runner place controller
 runner_place_controller = tk.IntVar()
+runner_place_controller.set(1)
 # define chaser place controller
 chaser_place_controller = tk.IntVar()
+chaser_place_controller.set(1)
 # define rock places controller
 rock_place_controller = tk.IntVar()
+rock_place_controller.set(1)
 # define rock count - default is 16
-rock_count = 16
+rock_count = tk.IntVar()
+rock_count.set(16)
 rock_counter = 0
 # define turn count - default value is 100
-turn_count = 100
+turn_count = tk.IntVar()
+turn_count.set(100)
 # set window props
 window.title(WINDOW_TITLE)
 window.resizable(0,0)
@@ -103,6 +110,14 @@ def __make_radiobutton__(master, x, y, h, w, *args, **kwargs):
     radiobutton = tk.Radiobutton(frame, *args, **kwargs)
     radiobutton.pack(fill=tk.BOTH, expand=1)
     return radiobutton
+# spinbox maker
+def __make_spinbox__(master, x, y, h, w, *args, **kwargs):
+    frame = tk.Frame(master, height=h, width=w)
+    frame.pack_propagate(0)
+    frame.place(x=x, y=y)
+    spinbox = tk.Spinbox(frame, *args, **kwargs)
+    spinbox.pack(fill=tk.BOTH, expand=1)
+    return spinbox
 # on click methods
 def clickedButton(event):
     global waitingJob
@@ -121,7 +136,7 @@ def clickedButton(event):
     elif waitingJob == WaitingJob.SelectRockPlace:
         to_rock(elts[row_column[0]][row_column[1]])
         rock_counter += 1
-        if rock_count == rock_counter:
+        if rock_count.get() == rock_counter:
             waitingJob = WaitingJob.NoWaitingJob
     print('Final Waiting Job:', waitingJob)
 # helper methods
@@ -167,9 +182,9 @@ runner_place_default_rb = __make_radiobutton__(window, CONFIGURATION_FRAME_ELT_W
                                                GENERAL_HEIGHT, CONFIGURATION_FRAME_ELT_WIDTH, text='Default',
                                                bg=RUNNER_PLACE_CONFIGURATION, value=1, variable=runner_place_controller,
                                                justify=tk.LEFT)
-runner_place_auto_rb = __make_radiobutton__(window, CONFIGURATION_FRAME_ELT_WIDTH * 0 + BOX_MARGIN * 1,
+runner_place_random_rb = __make_radiobutton__(window, CONFIGURATION_FRAME_ELT_WIDTH * 0 + BOX_MARGIN * 1,
                                             BOX_MARGIN * 4 + GENERAL_HEIGHT * 3,
-                                               GENERAL_HEIGHT, CONFIGURATION_FRAME_ELT_WIDTH, text='Auto',
+                                               GENERAL_HEIGHT, CONFIGURATION_FRAME_ELT_WIDTH, text='Random',
                                                bg=RUNNER_PLACE_CONFIGURATION, value=2, variable=runner_place_controller)
 runner_place_manual_rb = __make_radiobutton__(window, CONFIGURATION_FRAME_ELT_WIDTH * 0 + BOX_MARGIN * 1,
                                               BOX_MARGIN * 5 + GENERAL_HEIGHT * 4,
@@ -185,9 +200,9 @@ chaser_place_default_rb = __make_radiobutton__(window, CONFIGURATION_FRAME_ELT_W
                                                GENERAL_HEIGHT, CONFIGURATION_FRAME_ELT_WIDTH, text='Default',
                                                bg=CHASER_PLACE_CONFIGURATION, value=1, variable=chaser_place_controller,
                                                justify=tk.LEFT)
-chaser_place_auto_rb = __make_radiobutton__(window, CONFIGURATION_FRAME_ELT_WIDTH * 1 + BOX_MARGIN * 2,
+chaser_place_random_rb = __make_radiobutton__(window, CONFIGURATION_FRAME_ELT_WIDTH * 1 + BOX_MARGIN * 2,
                                             BOX_MARGIN * 4 + GENERAL_HEIGHT * 3,
-                                               GENERAL_HEIGHT, CONFIGURATION_FRAME_ELT_WIDTH, text='Auto',
+                                               GENERAL_HEIGHT, CONFIGURATION_FRAME_ELT_WIDTH, text='Random',
                                                bg=CHASER_PLACE_CONFIGURATION, value=2, variable=chaser_place_controller)
 chaser_place_manual_rb = __make_radiobutton__(window, CONFIGURATION_FRAME_ELT_WIDTH * 1 + BOX_MARGIN * 2,
                                               BOX_MARGIN * 5 + GENERAL_HEIGHT * 4,
@@ -203,21 +218,50 @@ rock_place_default_rb = __make_radiobutton__(window, CONFIGURATION_FRAME_ELT_WID
                                                GENERAL_HEIGHT, CONFIGURATION_FRAME_ELT_WIDTH, text='Default',
                                                bg=ROCK_PLACE_CONFIGURATION, value=1, variable=rock_place_controller,
                                                justify=tk.LEFT)
-rock_place_auto_rb = __make_radiobutton__(window, CONFIGURATION_FRAME_ELT_WIDTH * 2 + BOX_MARGIN * 3,
+rock_place_random_rb = __make_radiobutton__(window, CONFIGURATION_FRAME_ELT_WIDTH * 2 + BOX_MARGIN * 3,
                                             BOX_MARGIN * 4 + GENERAL_HEIGHT * 3,
-                                               GENERAL_HEIGHT, CONFIGURATION_FRAME_ELT_WIDTH, text='Auto',
+                                               GENERAL_HEIGHT, CONFIGURATION_FRAME_ELT_WIDTH, text='Random',
                                                bg=ROCK_PLACE_CONFIGURATION, value=2, variable=rock_place_controller)
 rock_place_manual_rb = __make_radiobutton__(window, CONFIGURATION_FRAME_ELT_WIDTH * 2 + BOX_MARGIN * 3,
                                               BOX_MARGIN * 5 + GENERAL_HEIGHT * 4,
                                                GENERAL_HEIGHT, CONFIGURATION_FRAME_ELT_WIDTH, text='Manual',
                                                bg=ROCK_PLACE_CONFIGURATION, value=3, variable=rock_place_controller)
-
-#runner_auto_manual_label = tk.Label(configuration_frame, text='Runner Behaviour')
-#runner_auto_manual_label.grid(column=0, row=0)
-#runner_auto_manual_label.pack(fill=tk.BOTH, expand=1)
-#runner_default_rb = tk.Radiobutton(configuration_frame, text='Default', value=1, variable=runner_controller)
-#runner_default_rb.grid(column=0, row=1)
-
+# runner behavior auto manual
+runner_behavior_configuration_label = __make_label__(window, CONFIGURATION_FRAME_ELT_WIDTH * 0 + BOX_MARGIN * 1,
+                                                  BOX_MARGIN * 6 + GENERAL_HEIGHT * 5,
+                                                  GENERAL_HEIGHT, CONFIGURATION_FRAME_ELT_WIDTH, text='Runner Behavior',
+                                                  bg=RUNNER_AUTO_MANUAL_CONFIGURATION)
+runner_behavior_auto_rb = __make_radiobutton__(window, CONFIGURATION_FRAME_ELT_WIDTH * 1 + BOX_MARGIN * 2,
+                                               BOX_MARGIN * 6 + GENERAL_HEIGHT * 5,
+                                               GENERAL_HEIGHT, CONFIGURATION_FRAME_ELT_WIDTH, text='Auto',
+                                               bg=RUNNER_AUTO_MANUAL_CONFIGURATION, value=1, variable=runner_controller)
+runner_behavior_manual_rb = __make_radiobutton__(window, CONFIGURATION_FRAME_ELT_WIDTH * 2 + BOX_MARGIN * 3,
+                                               BOX_MARGIN * 6 + GENERAL_HEIGHT * 5,
+                                               GENERAL_HEIGHT, CONFIGURATION_FRAME_ELT_WIDTH, text='Manual',
+                                               bg=RUNNER_AUTO_MANUAL_CONFIGURATION, value=2, variable=runner_controller)
+# turn count
+turn_count_label = __make_label__(window, CONFIGURATION_FRAME_ELT_WIDTH * 0 + BOX_MARGIN * 1,
+                                                  BOX_MARGIN * 7 + GENERAL_HEIGHT * 6,
+                                                  GENERAL_HEIGHT, CONFIGURATION_FRAME_ELT_WIDTH, text='Turn Count',
+                                                  bg=TURN_COUNT_CONFIGURATION)
+turn_count_spinbox = __make_spinbox__(window, CONFIGURATION_FRAME_ELT_WIDTH * 0 + BOX_MARGIN * 1,
+                                               BOX_MARGIN * 8 + GENERAL_HEIGHT * 7,
+                                               GENERAL_HEIGHT, CONFIGURATION_FRAME_ELT_WIDTH,
+                                               textvariable=turn_count, from_=10, to=1000)
+# rock count
+rock_count_label = __make_label__(window, CONFIGURATION_FRAME_ELT_WIDTH * 1 + BOX_MARGIN * 2,
+                                                  BOX_MARGIN * 7 + GENERAL_HEIGHT * 6,
+                                                  GENERAL_HEIGHT, CONFIGURATION_FRAME_ELT_WIDTH, text='Rock Count',
+                                                  bg=ROCK_COUNT_CONFIGURATION)
+rock_count_spinbox = __make_spinbox__(window, CONFIGURATION_FRAME_ELT_WIDTH * 1 + BOX_MARGIN * 2,
+                                               BOX_MARGIN * 8 + GENERAL_HEIGHT * 7,
+                                               GENERAL_HEIGHT, CONFIGURATION_FRAME_ELT_WIDTH,
+                                               textvariable=rock_count, from_=1, to=50)
+# apply configuration
+apply_configuration_button = __make_button__(window, CONFIGURATION_FRAME_ELT_WIDTH * 2 + BOX_MARGIN * 3,
+                                             BOX_MARGIN * 7 + GENERAL_HEIGHT * 6,
+                                             GENERAL_HEIGHT * 2 + BOX_MARGIN, CONFIGURATION_FRAME_ELT_WIDTH,
+                                             text='Apply\nConfiguration', bg='blue', fg=WHITE, font=BUTTON_FONT)
 elts = []
 for row in range(BOARD_GRID_ROW_COUNT+1):
     elts.append([])
