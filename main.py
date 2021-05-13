@@ -5,9 +5,9 @@ from PIL import Image, ImageTk
 # define constant variables
 ASCII_CAPITAL_LETTERS_START = 64
 # define window props
-WINDOW_TITLE = 'Run Forrest Run!!'
-WINDOW_HEIGHT = 730
-WINDOW_WIDTH = 730
+WINDOW_TITLE = 'Run Forrest Run!! The RL Game'
+WINDOW_HEIGHT = 640
+WINDOW_WIDTH = 590
 # define colors
 BLACK = '#000000'
 WHITE = '#FAFAFA'
@@ -27,8 +27,8 @@ BUTTON_RUNNER = 'runner'
 BUTTON_CHASER1 = 'chaser1'
 BUTTON_CHASER2 = 'chaser2'
 # define board props
-BOX_WIDTH = 50
-BOX_HEIGHT = 50
+BOX_WIDTH = 40
+BOX_HEIGHT = 40
 BOX_MARGIN = 2
 BOX_FONT = ("Calibri", 22)
 BUTTON_FONT = ("Calibri", 12)
@@ -67,8 +67,8 @@ turn_count = tk.IntVar()
 turn_count.set(100)
 # set window props
 window.title(WINDOW_TITLE)
-window.resizable(0,0)
-window.geometry(str(WINDOW_HEIGHT) + 'x' + str(WINDOW_WIDTH))
+window.resizable(0, 0)
+window.geometry(str(WINDOW_WIDTH) + 'x' + str(WINDOW_HEIGHT))
 window.wm_iconphoto(False, ImageTk.PhotoImage(Image.open('image/runner.png')))
 window.configure(bg=GRAY)
 # creating whole grid for once
@@ -145,7 +145,7 @@ def row_column_type_to_string(row, column, button_type):
 def string_to_row_column(rc_str):
     return int(rc_str.split('_')[0]), int(rc_str.split('_')[1])
 def num_to_char(num):
-    return chr(ASCII_CAPITAL_LETTERS_START + column)
+    return chr(ASCII_CAPITAL_LETTERS_START + num)
 def char_to_num(char):
     return int(char.upper()) - ASCII_CAPITAL_LETTERS_START
 def configure_button(button, image, button_type):
