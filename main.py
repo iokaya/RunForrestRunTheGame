@@ -163,7 +163,7 @@ def to_rock(button):
 # adding UI elements
 # images
 grass_image = tk.PhotoImage(file='image/grass.png')
-rock_image = tk.PhotoImage(file='image/rock.png')
+rock_image = tk.PhotoImage(file='image/obstacle.png')
 runner_image = tk.PhotoImage(file='image/runner.png')
 chaser1_image = tk.PhotoImage(file='image/chaser1.png')
 chaser2_image = tk.PhotoImage(file='image/chaser2.png')
