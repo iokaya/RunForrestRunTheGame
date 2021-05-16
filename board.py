@@ -2,7 +2,7 @@
 import tkinter as tk
 import utils as ut
 from PIL import Image, ImageTk
-from Enums import ButtonType, WaitingJob
+from Enums import ButtonType, WaitingJob, PlaceConfig, BehaviorConfig
 from agent import Agent
 
 class Board(tk.Frame):
@@ -49,11 +49,11 @@ class Board(tk.Frame):
         self.runnerPlaceController.set(1)
         self.chaserPlaceController = tk.IntVar()
         self.chaserPlaceController.set(1)
-        self.rockPlaceController = tk.IntVar()
-        self.rockPlaceController.set(1)
-        self.rockCount = tk.IntVar()
-        self.rockCount.set(16)
-        self.rockCounter = 0
+        self.obstaclePlaceController = tk.IntVar()
+        self.obstaclePlaceController.set(1)
+        self.obstacleCount = tk.IntVar()
+        self.obstacleCount.set(20)
+        self.obstacleCounter = 0
         self.turnCount = tk.IntVar()
         self.turnCount.set(100)
         self.window.title(self.windowTitle)
@@ -74,10 +74,16 @@ class Board(tk.Frame):
             ButtonType.Chaser2: self.imageChaser2
         }
         self.state = []
-        self.waitingJob = WaitingJob.SelectRunnerPlace
+        self.waitingJob = WaitingJob.ApplyConfiguration
         self.runner = Agent(0, 0, ButtonType.Runner)
         self.chaser1 = Agent(0, 0, ButtonType.Chaser1)
         self.chaser2 = Agent(0, 0, ButtonType.Chaser2)
+
+        self.runnerDefaultPlace = (1, 1)
+        self.chaser1DefaultPlace = (self.rowCount, self.columnCount)
+        self.chaser2DefaultPlace = (self.rowCount, self.columnCount-1)
+
+        self.applyConfigButtonList = []
 
         counter = 0
         while counter <= self.columnCount:
@@ -97,18 +103,18 @@ class Board(tk.Frame):
         self.runnerPlaceDefaultRB = self.makeRadioButton(self.window, self.configurationFrameEltWidth * 0 + self.boxMargin * 1,
                                                         self.boxMargin * 3 + self.generalHeight * 2,
                                                         self.generalHeight, self.configurationFrameEltWidth, text='Default',
-                                                        bg=self.colorRunnerPlaceConfiguration, value=1,
+                                                        bg=self.colorRunnerPlaceConfiguration, value=PlaceConfig.Default.value,
                                                         variable=self.runnerPlaceController,
                                                         justify=tk.LEFT)
         self.runnerPlaceRandomRB = self.makeRadioButton(self.window, self.configurationFrameEltWidth * 0 + self.boxMargin * 1,
                                                         self.boxMargin * 4 + self.generalHeight * 3,
                                                         self.generalHeight, self.configurationFrameEltWidth, text='Random',
-                                                        bg=self.colorRunnerPlaceConfiguration, value=2,
+                                                        bg=self.colorRunnerPlaceConfiguration, value=PlaceConfig.Random.value,
                                                         variable=self.runnerPlaceController)
         self.runnerPlaceManualRB = self.makeRadioButton(self.window, self.configurationFrameEltWidth * 0 + self.boxMargin * 1,
                                                         self.boxMargin * 5 + self.generalHeight * 4,
                                                         self.generalHeight, self.configurationFrameEltWidth, text='Manual',
-                                                        bg=self.colorRunnerPlaceConfiguration, value=3,
+                                                        bg=self.colorRunnerPlaceConfiguration, value=PlaceConfig.Manual.value,
                                                         variable=self.runnerPlaceController)
         self.chaserPlaceConfigurationLabel = self.makeLabel(self.window, self.configurationFrameEltWidth * 1 + self.boxMargin * 2,
                                                         self.boxMargin * 2 + self.generalHeight * 1,
@@ -118,18 +124,18 @@ class Board(tk.Frame):
         self.chaserPlaceDefaultRB = self.makeRadioButton(self.window, self.configurationFrameEltWidth * 1 + self.boxMargin * 2,
                                                         self.boxMargin * 3 + self.generalHeight * 2,
                                                         self.generalHeight, self.configurationFrameEltWidth, text='Default',
-                                                        bg=self.colorChaserPlaceConfiguration, value=1,
+                                                        bg=self.colorChaserPlaceConfiguration, value=PlaceConfig.Default.value,
                                                         variable=self.chaserPlaceController,
                                                         justify=tk.LEFT)
         self.chaserPlaceRandomRB = self.makeRadioButton(self.window, self.configurationFrameEltWidth * 1 + self.boxMargin * 2,
                                                         self.boxMargin * 4 + self.generalHeight * 3,
                                                         self.generalHeight, self.configurationFrameEltWidth, text='Random',
-                                                        bg=self.colorChaserPlaceConfiguration, value=2,
+                                                        bg=self.colorChaserPlaceConfiguration, value=PlaceConfig.Random.value,
                                                         variable=self.chaserPlaceController)
         self.chaserPlaceManualRB = self.makeRadioButton(self.window, self.configurationFrameEltWidth * 1 + self.boxMargin * 2,
                                                         self.boxMargin * 5 + self.generalHeight * 4,
                                                         self.generalHeight, self.configurationFrameEltWidth, text='Manual',
-                                                        bg=self.colorChaserPlaceConfiguration, value=3,
+                                                        bg=self.colorChaserPlaceConfiguration, value=PlaceConfig.Manual.value,
                                                         variable=self.chaserPlaceController)
         self.rockPlaceConfigurationLabel = self.makeLabel(self.window, self.configurationFrameEltWidth * 2 + self.boxMargin * 3,
                                                         self.boxMargin * 2 + self.generalHeight * 1,
@@ -139,19 +145,19 @@ class Board(tk.Frame):
         self.rockPlaceDefaultRB = self.makeRadioButton(self.window, self.configurationFrameEltWidth * 2 + self.boxMargin * 3,
                                                         self.boxMargin * 3 + self.generalHeight * 2,
                                                         self.generalHeight, self.configurationFrameEltWidth, text='Default',
-                                                        bg=self.colorRockPlaceConfiguration, value=1,
-                                                        variable=self.rockPlaceController,
+                                                        bg=self.colorRockPlaceConfiguration, value=PlaceConfig.Default.value,
+                                                        variable=self.obstaclePlaceController,
                                                         justify=tk.LEFT)
         self.rockPlaceRandomRB = self.makeRadioButton(self.window, self.configurationFrameEltWidth * 2 + self.boxMargin * 3,
                                                         self.boxMargin * 4 + self.generalHeight * 3,
                                                         self.generalHeight, self.configurationFrameEltWidth, text='Random',
-                                                        bg=self.colorRockPlaceConfiguration, value=2,
-                                                        variable=self.rockPlaceController)
+                                                        bg=self.colorRockPlaceConfiguration, value=PlaceConfig.Random.value,
+                                                        variable=self.obstaclePlaceController)
         self.rockPlaceManualRB = self.makeRadioButton(self.window, self.configurationFrameEltWidth * 2 + self.boxMargin * 3,
                                                         self.boxMargin * 5 + self.generalHeight * 4,
                                                         self.generalHeight, self.configurationFrameEltWidth, text='Manual',
-                                                        bg=self.colorRockPlaceConfiguration, value=3,
-                                                        variable=self.rockPlaceController)
+                                                        bg=self.colorRockPlaceConfiguration, value=PlaceConfig.Manual.value,
+                                                        variable=self.obstaclePlaceController)
         self.runnerBehaviorConfigurationLabel = self.makeLabel(self.window, self.configurationFrameEltWidth * 0 + self.boxMargin * 1,
                                                         self.boxMargin * 6 + self.generalHeight * 5,
                                                         self.generalHeight, self.configurationFrameEltWidth,
@@ -160,34 +166,81 @@ class Board(tk.Frame):
         self.runnerBehaviorAutoRB = self.makeRadioButton(self.window, self.configurationFrameEltWidth * 1 + self.boxMargin * 2,
                                                         self.boxMargin * 6 + self.generalHeight * 5,
                                                         self.generalHeight, self.configurationFrameEltWidth, text='Auto',
-                                                        bg=self.colorRunnerBehaviourConfiguration, value=1,
+                                                        bg=self.colorRunnerBehaviourConfiguration, value=BehaviorConfig.Auto.value,
                                                         variable=self.runnerController)
         self.runnerBehaviorManualRB = self.makeRadioButton(self.window, self.configurationFrameEltWidth * 2 + self.boxMargin * 3,
                                                         self.boxMargin * 6 + self.generalHeight * 5,
                                                         self.generalHeight, self.configurationFrameEltWidth, text='Manual',
-                                                        bg=self.colorRunnerBehaviourConfiguration, value=2,
+                                                        bg=self.colorRunnerBehaviourConfiguration, value=BehaviorConfig.Manual.value,
                                                         variable=self.runnerController)
-        self.turn_count_label = self.makeLabel(self.window, self.configurationFrameEltWidth * 0 + self.boxMargin * 1,
+        self.turnCountLabel = self.makeLabel(self.window, self.configurationFrameEltWidth * 0 + self.boxMargin * 1,
                                                         self.boxMargin * 7 + self.generalHeight * 6,
                                                         self.generalHeight, self.configurationFrameEltWidth, text='Turn Count',
                                                         bg=self.colorTurnCountConfiguration)
-        self.turn_count_spinbox = self.makeSpinbox(self.window, self.configurationFrameEltWidth * 0 + self.boxMargin * 1,
+        self.turnCountSpinbox = self.makeSpinbox(self.window, self.configurationFrameEltWidth * 0 + self.boxMargin * 1,
                                                         self.boxMargin * 8 + self.generalHeight * 7,
                                                         self.generalHeight, self.configurationFrameEltWidth,
                                                         textvariable=self.turnCount, from_=10, to=1000)
-        self.rock_count_label = self.makeLabel(self.window, self.configurationFrameEltWidth * 1 + self.boxMargin * 2,
+        self.obstacleCountLabel = self.makeLabel(self.window, self.configurationFrameEltWidth * 1 + self.boxMargin * 2,
                                                         self.boxMargin * 7 + self.generalHeight * 6,
-                                                        self.generalHeight, self.configurationFrameEltWidth, text='Rock Count',
+                                                        self.generalHeight, self.configurationFrameEltWidth, text='Obstacle Count',
                                                         bg=self.colorRockCountConfiguration)
-        self.rock_count_spinbox = self.makeSpinbox(self.window, self.configurationFrameEltWidth * 1 + self.boxMargin * 2,
+        self.obstacleCountSpinbox = self.makeSpinbox(self.window, self.configurationFrameEltWidth * 1 + self.boxMargin * 2,
                                                         self.boxMargin * 8 + self.generalHeight * 7,
                                                         self.generalHeight, self.configurationFrameEltWidth,
-                                                        textvariable=self.rockCount, from_=1, to=50)
-        self.apply_configuration_button = self.makeButton(self.window, self.configurationFrameEltWidth * 2 + self.boxMargin * 3,
+                                                        textvariable=self.obstacleCount, from_=1, to=50)
+        self.applyConfigurationButton = self.makeButton(self.window, self.configurationFrameEltWidth * 2 + self.boxMargin * 3,
                                                         self.boxMargin * 7 + self.generalHeight * 6,
                                                         self.generalHeight * 2 + self.boxMargin, self.configurationFrameEltWidth,
-                                                        text='Apply\nConfiguration', bg='blue', fg=self.colorWhite, font=self.buttonFont)
+                                                        ButtonType.ApplyConfig, text='Apply\nConfiguration', bg='blue',
+                                                        fg=self.colorWhite, font=self.buttonFont)
+        self.applyConfigurationButton.bind('<1>', self.handleEvent)
+
+        self.applyConfigButtonList.append(self.runnerPlaceDefaultRB)
+        self.applyConfigButtonList.append(self.runnerPlaceRandomRB)
+        self.applyConfigButtonList.append(self.runnerPlaceManualRB)
+        self.applyConfigButtonList.append(self.chaserPlaceDefaultRB)
+        self.applyConfigButtonList.append(self.chaserPlaceRandomRB)
+        self.applyConfigButtonList.append(self.chaserPlaceManualRB)
+        self.applyConfigButtonList.append(self.rockPlaceDefaultRB)
+        self.applyConfigButtonList.append(self.rockPlaceRandomRB)
+        self.applyConfigButtonList.append(self.rockPlaceManualRB)
+        self.applyConfigButtonList.append(self.runnerBehaviorAutoRB)
+        self.applyConfigButtonList.append(self.runnerBehaviorManualRB)
+        self.applyConfigButtonList.append(self.turnCountSpinbox)
+        self.applyConfigButtonList.append(self.obstacleCountSpinbox)
+        self.applyConfigButtonList.append(self.applyConfigurationButton)
+
         self.elts = []
+
+        self.initializeElts()
+        self.initializeState()
+        self.window.mainloop()
+
+    def setWaitingJob(self):
+        if self.waitingJob == WaitingJob.ApplyConfiguration:
+            self.waitingJob = WaitingJob.SelectRunnerPlace
+        elif self.waitingJob == WaitingJob.SelectRunnerPlace:
+            self.waitingJob = WaitingJob.SelectChaser1Place
+        elif self.waitingJob == WaitingJob.SelectChaser1Place:
+            self.waitingJob = WaitingJob.SelectChaser2Place
+        elif self.waitingJob == WaitingJob.SelectChaser2Place:
+            self.waitingJob = WaitingJob.SelectObstaclePlace
+        elif self.waitingJob == WaitingJob.SelectObstaclePlace:
+            if ut.getElementCount(self.state, ButtonType.Obstacle) == self.obstacleCount.get():
+                self.waitingJob = WaitingJob.StartGame
+        elif self.waitingJob == WaitingJob.StartGame:
+            self.waitingJob = WaitingJob.PlayRunner
+        elif self.waitingJob == WaitingJob.PlayRunner:
+            self.waitingJob = WaitingJob.PlayChaser1
+        elif self.waitingJob == WaitingJob.PlayChaser1:
+            self.waitingJob = WaitingJob.PlayChaser2
+        elif self.waitingJob == WaitingJob.PlayChaser2:
+            self.waitingJob = WaitingJob.PlayRunner
+        else:
+            self.waitingJob = WaitingJob.NoWaitingJob
+
+    def initializeElts(self):
         for row in range(self.rowCount + 1):
             self.elts.append([])
             for column in range(self.columnCount + 1):
@@ -203,13 +256,11 @@ class Board(tk.Frame):
                     elt = self.makeLabel(self.window, x, y, self.boxHeight, self.boxWidth, bg=self.colorWhite, font=self.boxFont, text=str(row))
                 else:
                     button_type = 'grass'
-                    elt = self.makeButton(self.window, x, y, self.boxHeight, self.boxWidth,
+                    elt = self.makeButton(self.window, x, y, self.boxHeight, self.boxWidth, ButtonType.Grass,
                                           image=self.imageGrass, text=ut.rowColumnTypeToString(row, column, button_type))
-                    elt.bind('<1>', self.clickedButton)
+                    #elt.bind('<1>', self.clickedButton)
+                    elt.bind('<1>', self.handleEvent)
                 self.elts[row].append(elt)
-
-        self.initializeState()
-        self.window.mainloop()
 
     def initializeState(self):
         for row in range(self.rowCount + 1):
@@ -220,35 +271,104 @@ class Board(tk.Frame):
                 else:
                     self.state[row].append(ButtonType.Grass)
 
-    def moveAgent(self, row, column, buttonType, oldRow=0, oldColumn=0):
-        if oldRow > 0:
-            self.configureButton(self.elts[oldRow][oldColumn], ButtonType.Grass)
-            self.state[oldRow][oldColumn] = ButtonType.Grass
-        self.configureButton(self.elts[row][column], buttonType)
-        self.state[row][column] = buttonType
+    def moveAgent(self, row, column, agent):
+        oldState = agent.changeAgentState(row, column)
+        self.configureButton(self.elts[row][column], agent.buttonType)
+        self.state[row][column] = agent.buttonType
+        if oldState[0] > 0:
+            self.configureButton(self.elts[oldState[0]][oldState[1]], ButtonType.Grass)
+            self.state[oldState[0]][oldState[1]] = ButtonType.Grass
+
+    def placeObstacle(self, row, column):
+        if self.state[row][column] == ButtonType.Grass:
+            self.configureButton(self.elts[row][column], ButtonType.Obstacle)
+            self.state[row][column] = ButtonType.Obstacle
 
     def clickedButton(self, event):
         row_column = ut.stringToRowColumn(event.widget['text'])
         row = row_column[0]
         column = row_column[1]
-        print('Initial Waiting Job:', self.waitingJob)
         if self.waitingJob == WaitingJob.SelectRunnerPlace:
-            self.moveAgent(row, column, ButtonType.Runner)
-            self.waitingJob = WaitingJob.SelectChaser1Place
-            self.runner.row = row
-            self.runner.column = column
+            self.moveAgent(row, column, self.runner)
+            self.setWaitingJob()
         elif self.waitingJob == WaitingJob.SelectChaser1Place:
-            self.moveAgent(row, column, ButtonType.Chaser1)
-            self.waitingJob = WaitingJob.SelectChaser2Place
+            self.moveAgent(row, column, self.chaser1)
+            self.setWaitingJob()
         elif self.waitingJob == WaitingJob.SelectChaser2Place:
-            self.moveAgent(row, column, ButtonType.Chaser2)
-            self.waitingJob = WaitingJob.SelectRockPlace
-        elif self.waitingJob == WaitingJob.SelectRockPlace:
-            self.moveAgent(row, column, ButtonType.Obstacle)
-            self.rockCounter += 1
-            if self.rockCount.get() == self.rockCounter:
-                self.waitingJob = WaitingJob.NoWaitingJob
-        print('Final Waiting Job:', self.waitingJob)
+            self.moveAgent(row, column, self.chaser2)
+            self.setWaitingJob()
+        elif self.waitingJob == WaitingJob.SelectObstaclePlace:
+            self.placeObstacle(row, column)
+            self.setWaitingJob()
+
+    def handleEvent(self, event):
+        actionTaken = False
+        buttonType = event.widget.buttonType
+        if buttonType == ButtonType.ApplyConfig:
+            self.disableButtons()
+            actionTaken = True
+        elif buttonType == ButtonType.StartGame:
+            print('Starting the game')
+            actionTaken = True
+        else:
+            row = ut.stringToRowColumn(event.widget['text'])[0]
+            column = ut.stringToRowColumn(event.widget['text'])[1]
+            if self.waitingJob == WaitingJob.SelectRunnerPlace and self.runnerPlaceController.get() == PlaceConfig.Manual.value:
+                self.moveAgent(row, column, self.runner)
+                actionTaken = True
+            elif self.waitingJob == WaitingJob.SelectChaser1Place and self.chaserPlaceController.get() == PlaceConfig.Manual.value:
+                self.moveAgent(row, column, self.chaser1)
+                actionTaken = True
+            elif self.waitingJob == WaitingJob.SelectChaser2Place and self.chaserPlaceController.get() == PlaceConfig.Manual.value:
+                self.moveAgent(row, column, self.chaser2)
+                actionTaken = True
+            elif self.waitingJob == WaitingJob.SelectObstaclePlace and self.obstaclePlaceController.get() == PlaceConfig.Manual.value:
+                self.placeObstacle(row, column)
+                actionTaken = True
+            elif self.waitingJob == WaitingJob.PlayRunner and self.runnerController.get() == BehaviorConfig.Manual.value:
+                print('Runner will play!!')
+                actionTaken = True
+
+        if actionTaken:
+            self.window.update()
+            self.setWaitingJob()
+            self.actionDecider()
+
+    def actionDecider(self):
+        actionTaken = False
+        if self.waitingJob == WaitingJob.SelectRunnerPlace:
+            if self.runnerPlaceController.get() == PlaceConfig.Random.value:
+                row, column = ut.getRandomPlace(self.state)
+                self.moveAgent(row, column, self.runner)
+                actionTaken = True
+            elif self.runnerPlaceController.get() == PlaceConfig.Default.value:
+                self.moveAgent(self.runnerDefaultPlace[0], self.runnerDefaultPlace[1], self.runner)
+                actionTaken = True
+        elif self.waitingJob == WaitingJob.SelectChaser1Place:
+            if self.chaserPlaceController.get() == PlaceConfig.Random.value:
+                row, column = ut.getRandomPlace(self.state)
+                self.moveAgent(row, column, self.chaser1)
+                actionTaken = True
+            elif self.chaserPlaceController.get() == PlaceConfig.Default.value:
+                self.moveAgent(self.chaser1DefaultPlace[0], self.chaser1DefaultPlace[1], self.chaser1)
+                actionTaken = True
+        elif self.waitingJob == WaitingJob.SelectChaser2Place:
+            if self.chaserPlaceController.get() == PlaceConfig.Random.value:
+                row, column = ut.getRandomPlace(self.state)
+                self.moveAgent(row, column, self.chaser2)
+                actionTaken = True
+            elif self.chaserPlaceController.get() == PlaceConfig.Default.value:
+                self.moveAgent(self.chaser2DefaultPlace[0], self.chaser2DefaultPlace[1], self.chaser2)
+                actionTaken = True
+        elif self.waitingJob == WaitingJob.SelectObstaclePlace:
+            if self.obstaclePlaceController.get() in [PlaceConfig.Random.value, PlaceConfig.Default.value]:
+                row, column = ut.getRandomPlace(self.state)
+                self.placeObstacle(row, column)
+                actionTaken = True
+
+        if actionTaken:
+            self.setWaitingJob()
+            self.actionDecider()
 
     def makeLabel(self, master, x, y, h, w, *args, **kwargs):
         frame = tk.Frame(master, height=h, width=w)
@@ -259,12 +379,13 @@ class Board(tk.Frame):
         return label
 
     # button maker
-    def makeButton(self, master, x, y, h, w, *args, **kwargs):
+    def makeButton(self, master, x, y, h, w, buttonType, *args, **kwargs):
         frame = tk.Frame(master, height=h, width=w)
         frame.pack_propagate(0)
         frame.place(x=x, y=y)
         button = tk.Button(frame, *args, **kwargs)
         button.pack(fill=tk.BOTH, expand=1)
+        button.buttonType = buttonType
         return button
 
     # radiobutton maker
@@ -288,3 +409,11 @@ class Board(tk.Frame):
     def configureButton(self, button, buttonType):
         button.configure(image=self.buttonImage[buttonType])
         button.buttonType = buttonType
+
+    def disableButtons(self):
+        for elt in self.applyConfigButtonList:
+            elt['state'] = 'disabled'
+
+    def enableButtons(self):
+        for elt in self.applyConfigButtonList:
+            elt['state'] = 'normal'

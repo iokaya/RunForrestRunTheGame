@@ -2,12 +2,16 @@ import enum
 
 
 class WaitingJob(enum.Enum):
-    NoWaitingJob = 0
+    ApplyConfiguration = 0
     SelectRunnerPlace = 1
     SelectChaser1Place = 2
     SelectChaser2Place = 3
-    SelectRockPlace = 4
-    ChangeRunnerPlace = 5
+    SelectObstaclePlace = 4
+    StartGame = 5
+    PlayRunner = 6
+    PlayChaser1 = 7
+    PlayChaser2 = 8
+    NoWaitingJob = 99
 
 
 class ButtonType(enum.Enum):
@@ -17,3 +21,16 @@ class ButtonType(enum.Enum):
     Runner = 'R'
     Chaser1 = 'C1'
     Chaser2 = 'C2'
+    ApplyConfig = 'A'
+    StartGame = 'S'
+
+
+class PlaceConfig(enum.Enum):
+    Default = 0
+    Random = 1
+    Manual = 2
+
+
+class BehaviorConfig(enum.Enum):
+    Auto = 0
+    Manual = 1

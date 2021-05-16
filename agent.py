@@ -8,7 +8,8 @@ class Agent:
         self.column = column
         self.buttonType = buttonType
         self.isRunner = buttonType == ButtonType.Runner
-        self.moveList = []
+        self.moveLog = []
+        self.possibleMoves = []
         self.score = 0
 
     def changeAgentState(self, row, column):
@@ -16,8 +17,12 @@ class Agent:
         oldColumn = self.column
         self.row = row
         self.column = column
-        self.appendMoveToList
+        self.appendMoveToLog()
         return oldRow, oldColumn
 
-    def appendMoveToList(self):
-        self.moveList.append(self.buttonType.value + ' ' + ut.stateStringFromRowColumn(self.row, self.column))
+    def appendMoveToLog(self):
+        self.moveLog.append(self.buttonType.value + ' ' + ut.stateStringFromRowColumn(self.row, self.column))
+
+    def detectPossibleMoves(self, state):
+        self.possibleMoves = ut.detectPossibleMoves(self.row, self.column, state)
+
