@@ -11,9 +11,9 @@ class WaitingJob(enum.Enum):
 
 
 class ButtonType(enum.Enum):
-    Header = 'HD'
-    Grass = 'GR'
-    Obstacle = 'OB'
-    Runner = 'RN'
+    Header = 'H'
+    Grass = 'G'
+    Obstacle = 'O'
+    Runner = 'R'
     Chaser1 = 'C1'
     Chaser2 = 'C2'

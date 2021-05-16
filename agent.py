@@ -14,5 +14,10 @@ class Agent:
     def changeAgentState(self, row, column):
         oldRow = self.row
         oldColumn = self.column
+        self.row = row
+        self.column = column
+        self.appendMoveToList
+        return oldRow, oldColumn
 
-
+    def appendMoveToList(self):
+        self.moveList.append(self.buttonType.value + ' ' + ut.stateStringFromRowColumn(self.row, self.column))

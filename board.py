@@ -198,7 +198,7 @@ class Board(tk.Frame):
                     elt = self.makeLabel(self.window, x, y, self.boxHeight, self.boxWidth, bg=self.colorBlack)
                 elif row == 0:
                     elt = self.makeLabel(self.window, x, y, self.boxHeight, self.boxWidth, bg=self.colorWhite,
-                                         font=self.boxFont, text=chr(self.asciiCapitalLettersStartNum + column))
+                                         font=self.boxFont, text=ut.numToChar(column))
                 elif column == 0:
                     elt = self.makeLabel(self.window, x, y, self.boxHeight, self.boxWidth, bg=self.colorWhite, font=self.boxFont, text=str(row))
                 else:
