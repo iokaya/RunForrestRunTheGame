@@ -1,4 +1,5 @@
 # import libraries
+import time
 import tkinter as tk
 import utils as ut
 from PIL import Image, ImageTk
@@ -41,16 +42,18 @@ class Board(tk.Frame):
         self.configurationFrameHeaderWidth = (self.windowWidth - 3 * self.boxMargin) * 0.5
         self.configurationFrameHeaderX = self.boxMargin
         self.configurationFrameHeaderY = self.boxMargin
+        self.consoleHeaderX = self.boxMargin * 2 + self.configurationFrameHeaderWidth
+        self.consoleHeaderY = self.boxMargin
         self.configurationFrameEltWidth = (self.configurationFrameHeaderWidth - 2 * self.boxMargin) / 3
         self.window = master
         self.runnerController = tk.IntVar()
-        self.runnerController.set(1)
+        self.runnerController.set(BehaviorConfig.Auto.value)
         self.runnerPlaceController = tk.IntVar()
-        self.runnerPlaceController.set(1)
+        self.runnerPlaceController.set(PlaceConfig.Random.value)
         self.chaserPlaceController = tk.IntVar()
-        self.chaserPlaceController.set(1)
+        self.chaserPlaceController.set(PlaceConfig.Random.value)
         self.obstaclePlaceController = tk.IntVar()
-        self.obstaclePlaceController.set(1)
+        self.obstaclePlaceController.set(PlaceConfig.Random.value)
         self.obstacleCount = tk.IntVar()
         self.obstacleCount.set(20)
         self.obstacleCounter = 0
@@ -194,7 +197,48 @@ class Board(tk.Frame):
                                                         self.generalHeight * 2 + self.boxMargin, self.configurationFrameEltWidth,
                                                         ButtonType.ApplyConfig, text='Apply\nConfiguration', bg='blue',
                                                         fg=self.colorWhite, font=self.buttonFont)
+        self.console = self.makeTextbox(self.window, self.consoleHeaderX,
+                                                        self.consoleHeaderY,
+                                                        self.windowHeight - (self.rowCount + 6)*self.boxMargin - (self.rowCount + 1) * self.boxHeight - self.generalHeight * 3,
+                                                        self.configurationFrameHeaderWidth, bg='light yellow')
+        self.runnerScoreLabel = self.makeLabel(self.window, self.configurationFrameEltWidth * 3 + self.boxMargin * 4,
+                                                        self.boxMargin * 6 + self.generalHeight * 5,
+                                                        self.generalHeight, self.configurationFrameEltWidth,
+                                                        text='Runner Score',
+                                                        bg=self.colorWhite)
+        self.runnerScoreBoard = self.makeLabel(self.window, self.configurationFrameEltWidth * 3 + self.boxMargin * 4,
+                                                        self.boxMargin * 7 + self.generalHeight * 6,
+                                                        self.generalHeight, self.configurationFrameEltWidth,
+                                                        text='0',
+                                                        bg=self.colorWhite)
+        self.runnerChaser1Label = self.makeLabel(self.window, self.configurationFrameEltWidth * 4 + self.boxMargin * 5,
+                                                        self.boxMargin * 6 + self.generalHeight * 5,
+                                                        self.generalHeight, self.configurationFrameEltWidth,
+                                                        text='Chaser 1 Score',
+                                                        bg=self.colorWhite)
+        self.runnerChaser1Board = self.makeLabel(self.window, self.configurationFrameEltWidth * 4 + self.boxMargin * 5,
+                                                        self.boxMargin * 7 + self.generalHeight * 6,
+                                                        self.generalHeight, self.configurationFrameEltWidth,
+                                                        text='0',
+                                                        bg=self.colorWhite)
+        self.runnerChaser2Label = self.makeLabel(self.window, self.configurationFrameEltWidth * 5 + self.boxMargin * 6,
+                                                        self.boxMargin * 6 + self.generalHeight * 5,
+                                                        self.generalHeight, self.configurationFrameEltWidth,
+                                                        text='Chaser 2 Score',
+                                                        bg=self.colorWhite)
+        self.runnerChaser2Board = self.makeLabel(self.window, self.configurationFrameEltWidth * 5 + self.boxMargin * 6,
+                                                        self.boxMargin * 7 + self.generalHeight * 6,
+                                                        self.generalHeight, self.configurationFrameEltWidth,
+                                                        text='0',
+                                                        bg=self.colorWhite)
+        self.startGameButton = self.makeButton(self.window, self.configurationFrameEltWidth * 3 + self.boxMargin * 4,
+                                                        self.boxMargin * 8 + self.generalHeight * 7,
+                                                        self.generalHeight, self.configurationFrameEltWidth * 3 + self.boxMargin * 2,
+                                                        ButtonType.StartGame, text='Start Game', bg='blue',
+                                                        fg=self.colorWhite, font=self.buttonFont, state='disabled')
+
         self.applyConfigurationButton.bind('<1>', self.handleEvent)
+        self.startGameButton.bind('<1>', self.handleEvent)
 
         self.applyConfigButtonList.append(self.runnerPlaceDefaultRB)
         self.applyConfigButtonList.append(self.runnerPlaceRandomRB)
@@ -213,6 +257,8 @@ class Board(tk.Frame):
 
         self.elts = []
 
+        self.appendToConsole('Welcome to the RL Game - Run Forrest Run!!')
+        self.appendToConsole('Waiting for configuration...')
         self.initializeElts()
         self.initializeState()
         self.window.mainloop()
@@ -229,6 +275,7 @@ class Board(tk.Frame):
         elif self.waitingJob == WaitingJob.SelectObstaclePlace:
             if ut.getElementCount(self.state, ButtonType.Obstacle) == self.obstacleCount.get():
                 self.waitingJob = WaitingJob.StartGame
+                self.startGameButton['state'] = 'normal'
         elif self.waitingJob == WaitingJob.StartGame:
             self.waitingJob = WaitingJob.PlayRunner
         elif self.waitingJob == WaitingJob.PlayRunner:
@@ -303,12 +350,15 @@ class Board(tk.Frame):
 
     def handleEvent(self, event):
         actionTaken = False
+        actionStr = ''
         buttonType = event.widget.buttonType
         if buttonType == ButtonType.ApplyConfig:
             self.disableButtons()
             actionTaken = True
+            actionStr = 'Waiting for game to start...\nConfiguration Applied!'
         elif buttonType == ButtonType.StartGame:
-            print('Starting the game')
+            self.startGameButton['state'] = 'disabled'
+            actionStr = 'Game Started!! Enjoy!!'
             actionTaken = True
         else:
             row = ut.stringToRowColumn(event.widget['text'])[0]
@@ -326,13 +376,18 @@ class Board(tk.Frame):
                 self.placeObstacle(row, column)
                 actionTaken = True
             elif self.waitingJob == WaitingJob.PlayRunner and self.runnerController.get() == BehaviorConfig.Manual.value:
-                print('Runner will play!!')
                 actionTaken = True
 
         if actionTaken:
-            self.window.update()
-            self.setWaitingJob()
-            self.actionDecider()
+            self.afterActionHandler(actionStr)
+
+    def afterActionHandler(self, logStr):
+        if logStr != '':
+            self.appendToConsole(logStr)
+        self.window.update()
+        time.sleep(0.3)
+        self.setWaitingJob()
+        self.actionDecider()
 
     def actionDecider(self):
         actionTaken = False
@@ -367,8 +422,7 @@ class Board(tk.Frame):
                 actionTaken = True
 
         if actionTaken:
-            self.setWaitingJob()
-            self.actionDecider()
+            self.afterActionHandler('')
 
     def makeLabel(self, master, x, y, h, w, *args, **kwargs):
         frame = tk.Frame(master, height=h, width=w)
@@ -406,6 +460,15 @@ class Board(tk.Frame):
         spinbox.pack(fill=tk.BOTH, expand=1)
         return spinbox
 
+    # textbox maker
+    def makeTextbox(self, master, x, y, h, w, *args, **kwargs):
+        frame = tk.Frame(master, height=h, width=w)
+        frame.pack_propagate(0)
+        frame.place(x=x, y=y)
+        textbox = tk.Text(frame, *args, **kwargs)
+        textbox.pack(fill=tk.BOTH, expand=1)
+        return textbox
+
     def configureButton(self, button, buttonType):
         button.configure(image=self.buttonImage[buttonType])
         button.buttonType = buttonType
@@ -417,3 +480,6 @@ class Board(tk.Frame):
     def enableButtons(self):
         for elt in self.applyConfigButtonList:
             elt['state'] = 'normal'
+
+    def appendToConsole(self, str):
+        self.console.insert('1.0', str + '\n')
