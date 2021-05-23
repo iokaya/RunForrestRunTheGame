@@ -2,6 +2,7 @@
 import time
 import tkinter as tk
 import utils as ut
+import pickle
 from PIL import Image, ImageTk
 from Enums import ButtonType, WaitingJob, PlaceConfig, BehaviorConfig
 from agent import Agent
@@ -355,7 +356,6 @@ class Board(tk.Frame):
         if buttonType == ButtonType.ApplyConfig:
             self.disableButtons()
             actionTaken = True
-            actionStr = 'Waiting for game to start...\nConfiguration Applied!'
         elif buttonType == ButtonType.StartGame:
             self.startGameButton['state'] = 'disabled'
             actionStr = 'Game Started!! Enjoy!!'
@@ -366,14 +366,18 @@ class Board(tk.Frame):
             if self.waitingJob == WaitingJob.SelectRunnerPlace and self.runnerPlaceController.get() == PlaceConfig.Manual.value:
                 self.moveAgent(row, column, self.runner)
                 actionTaken = True
+                actionStr = 'Waiting for Chaser 1 Place...'
             elif self.waitingJob == WaitingJob.SelectChaser1Place and self.chaserPlaceController.get() == PlaceConfig.Manual.value:
                 self.moveAgent(row, column, self.chaser1)
                 actionTaken = True
+                actionStr = 'Waiting for Chaser 2 Place...'
             elif self.waitingJob == WaitingJob.SelectChaser2Place and self.chaserPlaceController.get() == PlaceConfig.Manual.value:
                 self.moveAgent(row, column, self.chaser2)
                 actionTaken = True
+                actionStr = 'Waiting for Obstacle Places...'
             elif self.waitingJob == WaitingJob.SelectObstaclePlace and self.obstaclePlaceController.get() == PlaceConfig.Manual.value:
                 self.placeObstacle(row, column)
+                #actionStr = 'Waiting for game to start...\nConfiguration Applied!'
                 actionTaken = True
             elif self.waitingJob == WaitingJob.PlayRunner and self.runnerController.get() == BehaviorConfig.Manual.value:
                 actionTaken = True
@@ -385,7 +389,7 @@ class Board(tk.Frame):
         if logStr != '':
             self.appendToConsole(logStr)
         self.window.update()
-        time.sleep(0.3)
+        time.sleep(0.2)
         self.setWaitingJob()
         self.actionDecider()
 
