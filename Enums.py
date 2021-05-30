@@ -12,6 +12,7 @@ class WaitingJob(enum.Enum):
     PlayChaser1 = 7
     PlayChaser2 = 8
     NoWaitingJob = 99
+    EndGame = 100
 
 
 class ButtonType(enum.Enum):

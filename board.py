@@ -3,13 +3,14 @@ import time
 import tkinter as tk
 import utils as ut
 import pandas as pd
+import numpy as np
 import pickle
 from PIL import Image, ImageTk
 from Enums import ButtonType, WaitingJob, PlaceConfig, BehaviorConfig
 from agent import Agent
 
 class Board(tk.Frame):
-    def __init__(self, boxHeight, boxWidth, boxMargin, rowCount, columnCount, master=None):
+    def __init__(self, boxHeight, boxWidth, boxMargin, rowCount, columnCount, master=None, alpha=0.1, gamma=0.9, epsilon=0.1):
         super().__init__(master)
         self.colorBlack = '#000000'
         self.windowTitle = 'Run Forrest Run!! The RL Game'
@@ -38,6 +39,9 @@ class Board(tk.Frame):
         self.boxMargin = boxMargin
         self.rowCount = rowCount
         self.columnCount = columnCount
+        self.alpha = alpha
+        self.gamma = gamma
+        self.epsilon = epsilon
         self.boardTopMargin = self.windowHeight - (self.rowCount + 1) * self.boxHeight - (
                     self.rowCount + 2) * self.boxMargin
         self.generalHeight = (self.boardTopMargin - 8 * self.boxMargin) / 8
@@ -61,6 +65,7 @@ class Board(tk.Frame):
         self.obstacleCounter = 0
         self.turnCount = tk.IntVar()
         self.turnCount.set(100)
+        self.turnCounter = 0
         self.window.title(self.windowTitle)
         self.window.resizable(0, 0)
         self.window.geometry(str(self.windowWidth) + 'x' + str(self.windowHeight))
@@ -84,7 +89,7 @@ class Board(tk.Frame):
         self.default_q_table = pd.DataFrame(
             0,
             index=pd.MultiIndex.from_product([list(range(1, rowCount+1)), list(range(1, columnCount+1))]),
-            columns=['UP', 'DOWN', 'LEFT', 'RIGHT']
+            columns=['NO MOVE', 'NORTH', 'EAST', 'SOUTH', 'WEST']
         )
 
         self.runner = Agent(0, 0, ButtonType.Runner, self.default_q_table)
@@ -292,7 +297,13 @@ class Board(tk.Frame):
         elif self.waitingJob == WaitingJob.PlayChaser1:
             self.waitingJob = WaitingJob.PlayChaser2
         elif self.waitingJob == WaitingJob.PlayChaser2:
-            self.waitingJob = WaitingJob.PlayRunner
+            if self.turnCounter <= self.turnCount.get():
+                self.waitingJob = WaitingJob.PlayRunner
+            else:
+                self.waitingJob = WaitingJob.EndGame
+                self.runner.q_table.to_csv('csv/runner.csv')
+                self.chaser1.q_table.to_csv('csv/chaser1.csv')
+                self.chaser2.q_table.to_csv('csv/chaser2.csv')
         else:
             self.waitingJob = WaitingJob.NoWaitingJob
 
@@ -327,11 +338,11 @@ class Board(tk.Frame):
                 else:
                     self.state[row].append(ButtonType.Grass)
 
-    def moveAgent(self, row, column, agent):
+    def moveAgent(self, row, column, agent, action='NO ACTION'):
         oldState = agent.changeAgentState(row, column)
         self.configureButton(self.elts[row][column], agent.buttonType)
         self.state[row][column] = agent.buttonType
-        if oldState[0] > 0:
+        if oldState[0] > 0 and action != 'NO MOVE':
             self.configureButton(self.elts[oldState[0]][oldState[1]], ButtonType.Grass)
             self.state[oldState[0]][oldState[1]] = ButtonType.Grass
 
@@ -432,6 +443,17 @@ class Board(tk.Frame):
                 row, column = ut.getRandomPlace(self.state)
                 self.placeObstacle(row, column)
                 actionTaken = True
+        elif self.waitingJob == WaitingJob.PlayRunner:
+            self.step(self.runner)
+            actionTaken = True
+        elif self.waitingJob == WaitingJob.PlayChaser1:
+            self.step(self.chaser1)
+            actionTaken = True
+        elif self.waitingJob == WaitingJob.PlayChaser2:
+            self.step(self.chaser2)
+            self.turnCounter += 1
+            actionTaken = True
+
 
         if actionTaken:
             self.afterActionHandler('')
@@ -495,3 +517,27 @@ class Board(tk.Frame):
 
     def appendToConsole(self, str):
         self.console.insert('1.0', str + '\n')
+
+    def step(self, agent):
+        state = agent.position()
+        agent.detectPossibleMoves(self.state)
+        possibleMoves = agent.possibleMoves
+        q_table = agent.q_table
+        reward = 0
+        if np.random.uniform() <= self.epsilon or (q_table.loc[state, possibleMoves] == 0).all():
+            action = np.random.choice(possibleMoves)
+        else:
+            action = q_table.loc[state, possibleMoves].index[q_table.loc[state, possibleMoves].values.argmax()]
+        next_state = ut.nextState(state, action)
+        if agent.buttonType == ButtonType.Runner:
+            reward = ut.getRunnerReward(self.runner.position(), self.chaser1.position(), self.chaser2.position())
+        elif agent.buttonType == ButtonType.Chaser1:
+            reward = ut.getChaserReward(self.runner.position(), self.chaser1.position())
+        else:
+            reward = ut.getChaserReward(self.runner.position(), self.chaser2.position())
+        current_q = agent.q_table.loc[state, action]
+        next_q = agent.q_table.loc[next_state, :].max()
+        agent.q_table.loc[state, action] += self.alpha * (reward + self.gamma * next_q - current_q)
+
+        self.moveAgent(next_state[0], next_state[1], agent, action)
+

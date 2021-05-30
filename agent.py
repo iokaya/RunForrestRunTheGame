@@ -26,7 +26,7 @@ class Agent:
         self.moveLog.append(self.buttonType.value + ' ' + ut.stateStringFromRowColumn(self.row, self.column))
 
     def detectPossibleMoves(self, state):
-        self.possibleMoves = ut.detectPossibleMoves(self.row, self.column, state)
+        self.possibleMoves = ut.detectPossibleMoves(self.row, self.column, self.buttonType, state)
 
     def position(self):
         return self.row, self.column

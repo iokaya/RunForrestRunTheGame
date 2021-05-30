@@ -27,20 +27,20 @@ def detectPossibleMoves(row, column, buttonType, state):
         bannedTypes.append(ButtonType.Chaser2)
 
     # append current location
-    possibleMoves.append((row, column))
+    possibleMoves.append('NO MOVE')
 
     # check north
     if state[row-1][column] not in bannedTypes:
-        possibleMoves.append((row-1, column))
+        possibleMoves.append('NORTH')
     # check east
-    if column != len(state[0])-1 and state[row][column] not in bannedTypes:
-        possibleMoves.append((row, column+1))
+    if column != len(state[0])-1 and state[row][column+1] not in bannedTypes:
+        possibleMoves.append('EAST')
     # check south
     if row != len(state)-1 and state[row+1][column] not in bannedTypes:
-        possibleMoves.append((row+1, column))
+        possibleMoves.append('SOUTH')
     # check west
     if state[row][column-1] not in bannedTypes:
-        possibleMoves.append((row, column-1))
+        possibleMoves.append('WEST')
 
     return possibleMoves
 
@@ -65,18 +65,40 @@ def getElementCount(state, buttonType):
 def getManhattanDistance(coor1, coor2):
     return abs(coor1[0] - coor2[0]) + abs(coor1[1] - coor2[1])
 
-def getChaserReward(chaser, runner):
+def getChaserReward(runner, chaser):
     reward = 0
-    md = getManhattanDistance(chaser.position(), runner.position())
+    md = getManhattanDistance(chaser, runner)
     if md in [1, 2]:
         reward = 3 - md
     elif isRunnerCaught(runner, chaser):
         reward = 10000
+    return reward
 
+def getRunnerReward(runner, chaser1, chaser2):
+    reward = 0
+    md1 = getManhattanDistance(chaser1, runner)
+    md2 = getManhattanDistance(chaser2, runner)
+    md = min(md1, md2)
+    if md == 0:
+        reward = -10000
+    else:
+        reward = md - 10
     return reward
 
 def isRunnerCaught(runner, chaser):
-    if runner.position() == chaser.position():
+    if runner == chaser:
         return True
     else:
         return False
+
+def nextState(current_state, action):
+    next_state = current_state
+    if action == 'NORTH':
+        next_state = current_state[0]-1, current_state[1]
+    elif action == 'EAST':
+        next_state = current_state[0], current_state[1]+1
+    elif action == 'SOUTH':
+        next_state = current_state[0]+1, current_state[1]
+    elif action == 'WEST':
+        next_state = current_state[0], current_state[1]-1
+    return next_state
