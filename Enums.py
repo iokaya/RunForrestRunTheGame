@@ -24,6 +24,7 @@ class ButtonType(enum.Enum):
     Chaser2 = 'C2'
     ApplyConfig = 'A'
     StartGame = 'S'
+    TrainAgents = 'T'
 
 
 class PlaceConfig(enum.Enum):

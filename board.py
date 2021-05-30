@@ -10,7 +10,7 @@ from Enums import ButtonType, WaitingJob, PlaceConfig, BehaviorConfig
 from agent import Agent
 
 class Board(tk.Frame):
-    def __init__(self, boxHeight, boxWidth, boxMargin, rowCount, columnCount, master=None, alpha=0.1, gamma=0.9, epsilon=0.1):
+    def __init__(self, boxHeight, boxWidth, boxMargin, rowCount, columnCount, master=None, alpha=0.1, gamma=0.9, epsilon=0.5):
         super().__init__(master)
         self.colorBlack = '#000000'
         self.windowTitle = 'Run Forrest Run!! The RL Game'
@@ -84,6 +84,7 @@ class Board(tk.Frame):
             ButtonType.Chaser2: self.imageChaser2
         }
         self.state = []
+        self.original_agent_states = {}
         self.waitingJob = WaitingJob.ApplyConfiguration
 
         self.default_q_table = pd.DataFrame(
@@ -92,15 +93,19 @@ class Board(tk.Frame):
             columns=['NO MOVE', 'NORTH', 'EAST', 'SOUTH', 'WEST']
         )
 
-        self.runner = Agent(0, 0, ButtonType.Runner, self.default_q_table)
-        self.chaser1 = Agent(0, 0, ButtonType.Chaser1, self.default_q_table)
-        self.chaser2 = Agent(0, 0, ButtonType.Chaser2, self.default_q_table)
+        self.runner = Agent(0, 0, ButtonType.Runner, self.default_q_table.copy())
+        self.chaser1 = Agent(0, 0, ButtonType.Chaser1, self.default_q_table.copy())
+        self.chaser2 = Agent(0, 0, ButtonType.Chaser2, self.default_q_table.copy())
 
         self.runnerDefaultPlace = (1, 1)
         self.chaser1DefaultPlace = (self.rowCount, self.columnCount)
         self.chaser2DefaultPlace = (self.rowCount, self.columnCount-1)
 
         self.applyConfigButtonList = []
+
+        self.isTraining = False
+        self.episode_count = 30
+        self.episode_counter = 0
 
         counter = 0
         while counter <= self.columnCount:
@@ -225,34 +230,41 @@ class Board(tk.Frame):
                                                         self.generalHeight, self.configurationFrameEltWidth,
                                                         text='0',
                                                         bg=self.colorWhite)
-        self.runnerChaser1Label = self.makeLabel(self.window, self.configurationFrameEltWidth * 4 + self.boxMargin * 5,
+        self.chaser1ScoreLabel = self.makeLabel(self.window, self.configurationFrameEltWidth * 4 + self.boxMargin * 5,
                                                         self.boxMargin * 6 + self.generalHeight * 5,
                                                         self.generalHeight, self.configurationFrameEltWidth,
                                                         text='Chaser 1 Score',
                                                         bg=self.colorWhite)
-        self.runnerChaser1Board = self.makeLabel(self.window, self.configurationFrameEltWidth * 4 + self.boxMargin * 5,
+        self.chaser1ScoreBoard = self.makeLabel(self.window, self.configurationFrameEltWidth * 4 + self.boxMargin * 5,
                                                         self.boxMargin * 7 + self.generalHeight * 6,
                                                         self.generalHeight, self.configurationFrameEltWidth,
                                                         text='0',
                                                         bg=self.colorWhite)
-        self.runnerChaser2Label = self.makeLabel(self.window, self.configurationFrameEltWidth * 5 + self.boxMargin * 6,
+        self.chaser2ScoreLabel = self.makeLabel(self.window, self.configurationFrameEltWidth * 5 + self.boxMargin * 6,
                                                         self.boxMargin * 6 + self.generalHeight * 5,
                                                         self.generalHeight, self.configurationFrameEltWidth,
                                                         text='Chaser 2 Score',
                                                         bg=self.colorWhite)
-        self.runnerChaser2Board = self.makeLabel(self.window, self.configurationFrameEltWidth * 5 + self.boxMargin * 6,
+        self.chaser2ScoreBoard = self.makeLabel(self.window, self.configurationFrameEltWidth * 5 + self.boxMargin * 6,
                                                         self.boxMargin * 7 + self.generalHeight * 6,
                                                         self.generalHeight, self.configurationFrameEltWidth,
                                                         text='0',
                                                         bg=self.colorWhite)
         self.startGameButton = self.makeButton(self.window, self.configurationFrameEltWidth * 3 + self.boxMargin * 4,
                                                         self.boxMargin * 8 + self.generalHeight * 7,
-                                                        self.generalHeight, self.configurationFrameEltWidth * 3 + self.boxMargin * 2,
+                                                        self.generalHeight, self.configurationFrameEltWidth * 1.5 + self.boxMargin * 1,
                                                         ButtonType.StartGame, text='Start Game', bg='blue',
+                                                        fg=self.colorWhite, font=self.buttonFont, state='disabled')
+        self.trainAgentsButton = self.makeButton(self.window, self.configurationFrameEltWidth * 4.5 + self.boxMargin * 5,
+                                                        self.boxMargin * 8 + self.generalHeight * 7,
+                                                        self.generalHeight,
+                                                        self.configurationFrameEltWidth * 1.5 + self.boxMargin * 1,
+                                                        ButtonType.StartGame, text='Train Agents', bg='yellow',
                                                         fg=self.colorWhite, font=self.buttonFont, state='disabled')
 
         self.applyConfigurationButton.bind('<1>', self.handleEvent)
         self.startGameButton.bind('<1>', self.handleEvent)
+        self.trainAgentsButton.bind('<1>', self.trainAgents)
 
         self.applyConfigButtonList.append(self.runnerPlaceDefaultRB)
         self.applyConfigButtonList.append(self.runnerPlaceRandomRB)
@@ -277,6 +289,36 @@ class Board(tk.Frame):
         self.initializeState()
         self.window.mainloop()
 
+    def resetGame(self):
+        self.waitingJob = WaitingJob.StartGame
+        self.startGameButton['state'] = 'normal'
+        self.turnCounter = 0
+        self.runnerScoreBoard['text'] = 0
+        self.chaser1ScoreBoard['text'] = 0
+        self.chaser2ScoreBoard['text'] = 0
+        self.moveAgent(
+            self.original_agent_states[self.runner.buttonType.value][0],
+            self.original_agent_states[self.runner.buttonType.value][1],
+            self.runner
+        )
+        self.moveAgent(
+            self.original_agent_states[self.chaser1.buttonType.value][0],
+            self.original_agent_states[self.chaser1.buttonType.value][1],
+            self.chaser1
+        )
+        self.moveAgent(
+            self.original_agent_states[self.chaser2.buttonType.value][0],
+            self.original_agent_states[self.chaser2.buttonType.value][1],
+            self.chaser2
+        )
+        self.runner.score = 0
+        self.chaser1.score = 0
+        self.chaser2.score = 0
+
+    def trainAgents(self, event):
+        for i in range(self.episode_count):
+            self.handleEvent(event)
+
     def setWaitingJob(self):
         if self.waitingJob == WaitingJob.ApplyConfiguration:
             self.waitingJob = WaitingJob.SelectRunnerPlace
@@ -290,6 +332,7 @@ class Board(tk.Frame):
             if ut.getElementCount(self.state, ButtonType.Obstacle) == self.obstacleCount.get():
                 self.waitingJob = WaitingJob.StartGame
                 self.startGameButton['state'] = 'normal'
+                self.trainAgentsButton['state'] = 'normal'
         elif self.waitingJob == WaitingJob.StartGame:
             self.waitingJob = WaitingJob.PlayRunner
         elif self.waitingJob == WaitingJob.PlayRunner:
@@ -300,7 +343,7 @@ class Board(tk.Frame):
             if self.turnCounter <= self.turnCount.get():
                 self.waitingJob = WaitingJob.PlayRunner
             else:
-                self.waitingJob = WaitingJob.EndGame
+                self.resetGame()
                 self.runner.q_table.to_csv('csv/runner.csv')
                 self.chaser1.q_table.to_csv('csv/chaser1.csv')
                 self.chaser2.q_table.to_csv('csv/chaser2.csv')
@@ -340,6 +383,10 @@ class Board(tk.Frame):
 
     def moveAgent(self, row, column, agent, action='NO ACTION'):
         oldState = agent.changeAgentState(row, column)
+
+        if oldState == (0, 0):
+            self.original_agent_states[agent.buttonType.value] = row, column
+
         self.configureButton(self.elts[row][column], agent.buttonType)
         self.state[row][column] = agent.buttonType
         if oldState[0] > 0 and action != 'NO MOVE':
@@ -379,6 +426,22 @@ class Board(tk.Frame):
             self.startGameButton['state'] = 'disabled'
             actionStr = 'Game Started!! Enjoy!!'
             actionTaken = True
+        #elif buttonType == ButtonType.TrainAgents:
+        #    self.trainAgentsButton['state'] = 'disabled'
+        #    actionStr = 'Training Started!!'
+        #    actionTaken = True
+        #    if not self.isTraining:
+        #        self.isTraining = True
+        #        self.waitingJob = WaitingJob.StartGame
+        #        self.startGameButton.invoke()
+        #    elif self.episode_counter < self.episode_count:
+        #        self.resetGame()
+        #        self.episode_counter += 1
+        #        self.waitingJob = WaitingJob.StartGame
+        #        self.startGameButton.invoke()
+        #    else:
+        #        self.isTraining = False
+        #        self.episode_counter = 0
         else:
             row = ut.stringToRowColumn(event.widget['text'])[0]
             column = ut.stringToRowColumn(event.widget['text'])[1]
@@ -408,7 +471,7 @@ class Board(tk.Frame):
         if logStr != '':
             self.appendToConsole(logStr)
         self.window.update()
-        time.sleep(0.001)
+        time.sleep(0.01)
         self.setWaitingJob()
         self.actionDecider()
 
@@ -453,6 +516,8 @@ class Board(tk.Frame):
             self.step(self.chaser2)
             self.turnCounter += 1
             actionTaken = True
+        elif self.isTraining:
+            self.trainAgentsButton.invoke()
 
 
         if actionTaken:
@@ -538,6 +603,13 @@ class Board(tk.Frame):
         current_q = agent.q_table.loc[state, action]
         next_q = agent.q_table.loc[next_state, :].max()
         agent.q_table.loc[state, action] += self.alpha * (reward + self.gamma * next_q - current_q)
+        agent.score += reward
+        if agent.buttonType == ButtonType.Runner:
+            self.runnerScoreBoard['text'] = int(agent.score)
+        elif agent.buttonType == ButtonType.Chaser1:
+            self.chaser1ScoreBoard['text'] = int(agent.score)
+        else:
+            self.chaser2ScoreBoard['text'] = int(agent.score)
 
         self.moveAgent(next_state[0], next_state[1], agent, action)
 
