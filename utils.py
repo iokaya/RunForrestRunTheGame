@@ -61,3 +61,22 @@ def getRandomPlace(state):
 
 def getElementCount(state, buttonType):
     return sum([row.count(buttonType) for row in state])
+
+def getManhattanDistance(coor1, coor2):
+    return abs(coor1[0] - coor2[0]) + abs(coor1[1] - coor2[1])
+
+def getChaserReward(chaser, runner):
+    reward = 0
+    md = getManhattanDistance(chaser.position(), runner.position())
+    if md in [1, 2]:
+        reward = 3 - md
+    elif isRunnerCaught(runner, chaser):
+        reward = 10000
+
+    return reward
+
+def isRunnerCaught(runner, chaser):
+    if runner.position() == chaser.position():
+        return True
+    else:
+        return False

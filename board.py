@@ -2,6 +2,7 @@
 import time
 import tkinter as tk
 import utils as ut
+import pandas as pd
 import pickle
 from PIL import Image, ImageTk
 from Enums import ButtonType, WaitingJob, PlaceConfig, BehaviorConfig
@@ -79,9 +80,16 @@ class Board(tk.Frame):
         }
         self.state = []
         self.waitingJob = WaitingJob.ApplyConfiguration
-        self.runner = Agent(0, 0, ButtonType.Runner)
-        self.chaser1 = Agent(0, 0, ButtonType.Chaser1)
-        self.chaser2 = Agent(0, 0, ButtonType.Chaser2)
+
+        self.default_q_table = pd.DataFrame(
+            0,
+            index=pd.MultiIndex.from_product([list(range(1, rowCount+1)), list(range(1, columnCount+1))]),
+            columns=['UP', 'DOWN', 'LEFT', 'RIGHT']
+        )
+
+        self.runner = Agent(0, 0, ButtonType.Runner, self.default_q_table)
+        self.chaser1 = Agent(0, 0, ButtonType.Chaser1, self.default_q_table)
+        self.chaser2 = Agent(0, 0, ButtonType.Chaser2, self.default_q_table)
 
         self.runnerDefaultPlace = (1, 1)
         self.chaser1DefaultPlace = (self.rowCount, self.columnCount)
@@ -389,7 +397,7 @@ class Board(tk.Frame):
         if logStr != '':
             self.appendToConsole(logStr)
         self.window.update()
-        time.sleep(0.2)
+        time.sleep(0.001)
         self.setWaitingJob()
         self.actionDecider()
 

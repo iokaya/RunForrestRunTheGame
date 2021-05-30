@@ -4,7 +4,7 @@ from Enums import ButtonType
 
 
 class Agent:
-    def __init__(self, row, column, buttonType):
+    def __init__(self, row, column, buttonType, q_table):
         self.row = row
         self.column = column
         self.buttonType = buttonType
@@ -12,6 +12,7 @@ class Agent:
         self.moveLog = []
         self.possibleMoves = []
         self.score = 0
+        self.q_table = q_table
 
     def changeAgentState(self, row, column):
         oldRow = self.row
@@ -27,3 +28,5 @@ class Agent:
     def detectPossibleMoves(self, state):
         self.possibleMoves = ut.detectPossibleMoves(self.row, self.column, state)
 
+    def position(self):
+        return self.row, self.column
