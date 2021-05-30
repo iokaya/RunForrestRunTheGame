@@ -71,7 +71,7 @@ def getChaserReward(runner, chaser):
     if md in [1, 2]:
         reward = 3 - md
     elif isRunnerCaught(runner, chaser):
-        reward = 10000
+        reward = 30
     return reward
 
 def getRunnerReward(runner, chaser1, chaser2):
@@ -80,13 +80,13 @@ def getRunnerReward(runner, chaser1, chaser2):
     md2 = getManhattanDistance(chaser2, runner)
     md = min(md1, md2)
     if md == 0:
-        reward = -10
+        reward = -5
     elif md in [1, 2]:
         reward = md - 3
-    elif md <= 7:
-        reward = 0
-    else:
+    elif md >= 6:
         reward = 1
+    else:
+        reward = 0
 
     return reward
 

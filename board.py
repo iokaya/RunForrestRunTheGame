@@ -10,7 +10,7 @@ from Enums import ButtonType, WaitingJob, PlaceConfig, BehaviorConfig
 from agent import Agent
 
 class Board(tk.Frame):
-    def __init__(self, boxHeight, boxWidth, boxMargin, rowCount, columnCount, master=None, alpha=0.1, gamma=0.9, epsilon=0.5):
+    def __init__(self, boxHeight, boxWidth, boxMargin, rowCount, columnCount, master=None, alpha=0.1, gamma=0.9, epsilon=0.1, episode_count=500, game_sleep=0.1, training_sleep=0.0001):
         super().__init__(master)
         self.colorBlack = '#000000'
         self.windowTitle = 'Run Forrest Run!! The RL Game'
@@ -42,6 +42,8 @@ class Board(tk.Frame):
         self.alpha = alpha
         self.gamma = gamma
         self.epsilon = epsilon
+        self.game_sleep = game_sleep
+        self.training_sleep = training_sleep
         self.boardTopMargin = self.windowHeight - (self.rowCount + 1) * self.boxHeight - (
                     self.rowCount + 2) * self.boxMargin
         self.generalHeight = (self.boardTopMargin - 8 * self.boxMargin) / 8
@@ -87,6 +89,8 @@ class Board(tk.Frame):
         self.original_agent_states = {}
         self.waitingJob = WaitingJob.ApplyConfiguration
 
+        self.isRunnerCaught = False
+
         self.default_q_table = pd.DataFrame(
             0,
             index=pd.MultiIndex.from_product([list(range(1, rowCount+1)), list(range(1, columnCount+1))]),
@@ -96,6 +100,9 @@ class Board(tk.Frame):
         self.runner = Agent(0, 0, ButtonType.Runner, self.default_q_table.copy())
         self.chaser1 = Agent(0, 0, ButtonType.Chaser1, self.default_q_table.copy())
         self.chaser2 = Agent(0, 0, ButtonType.Chaser2, self.default_q_table.copy())
+        #self.runner = Agent(0, 0, ButtonType.Runner, pd.read_pickle('pickle/runner_' + str(self.rowCount) + '_' + str(self.columnCount) + '.pkl'))
+        #self.chaser1 = Agent(0, 0, ButtonType.Chaser1, pd.read_pickle('pickle/chaser1_' + str(self.rowCount) + '_' + str(self.columnCount) + '.pkl'))
+        #self.chaser2 = Agent(0, 0, ButtonType.Chaser2, pd.read_pickle('pickle/chaser2_' + str(self.rowCount) + '_' + str(self.columnCount) + '.pkl'))
 
         self.runnerDefaultPlace = (1, 1)
         self.chaser1DefaultPlace = (self.rowCount, self.columnCount)
@@ -104,7 +111,7 @@ class Board(tk.Frame):
         self.applyConfigButtonList = []
 
         self.isTraining = False
-        self.episode_count = 30
+        self.episode_count = episode_count
         self.episode_counter = 0
 
         counter = 0
@@ -290,6 +297,7 @@ class Board(tk.Frame):
         self.window.mainloop()
 
     def resetGame(self):
+        self.isRunnerCaught = False
         self.waitingJob = WaitingJob.StartGame
         self.startGameButton['state'] = 'normal'
         self.turnCounter = 0
@@ -340,13 +348,16 @@ class Board(tk.Frame):
         elif self.waitingJob == WaitingJob.PlayChaser1:
             self.waitingJob = WaitingJob.PlayChaser2
         elif self.waitingJob == WaitingJob.PlayChaser2:
-            if self.turnCounter <= self.turnCount.get():
+            if self.turnCounter <= self.turnCount.get() and not self.isRunnerCaught:
                 self.waitingJob = WaitingJob.PlayRunner
             else:
                 self.resetGame()
                 self.runner.q_table.to_csv('csv/runner.csv')
                 self.chaser1.q_table.to_csv('csv/chaser1.csv')
                 self.chaser2.q_table.to_csv('csv/chaser2.csv')
+                self.runner.q_table.to_pickle('pickle/runner_' + str(self.rowCount) + '_' + str(self.columnCount) + '.pkl')
+                self.chaser1.q_table.to_pickle('pickle/chaser1_' + str(self.rowCount) + '_' + str(self.columnCount) + '.pkl')
+                self.chaser2.q_table.to_pickle('pickle/chaser2_' + str(self.rowCount) + '_' + str(self.columnCount) + '.pkl')
         else:
             self.waitingJob = WaitingJob.NoWaitingJob
 
@@ -426,22 +437,6 @@ class Board(tk.Frame):
             self.startGameButton['state'] = 'disabled'
             actionStr = 'Game Started!! Enjoy!!'
             actionTaken = True
-        #elif buttonType == ButtonType.TrainAgents:
-        #    self.trainAgentsButton['state'] = 'disabled'
-        #    actionStr = 'Training Started!!'
-        #    actionTaken = True
-        #    if not self.isTraining:
-        #        self.isTraining = True
-        #        self.waitingJob = WaitingJob.StartGame
-        #        self.startGameButton.invoke()
-        #    elif self.episode_counter < self.episode_count:
-        #        self.resetGame()
-        #        self.episode_counter += 1
-        #        self.waitingJob = WaitingJob.StartGame
-        #        self.startGameButton.invoke()
-        #    else:
-        #        self.isTraining = False
-        #        self.episode_counter = 0
         else:
             row = ut.stringToRowColumn(event.widget['text'])[0]
             column = ut.stringToRowColumn(event.widget['text'])[1]
@@ -471,7 +466,10 @@ class Board(tk.Frame):
         if logStr != '':
             self.appendToConsole(logStr)
         self.window.update()
-        time.sleep(0.01)
+        if self.isTraining:
+            time.sleep(self.training_sleep)
+        else:
+            time.sleep(self.game_sleep)
         self.setWaitingJob()
         self.actionDecider()
 
@@ -595,11 +593,14 @@ class Board(tk.Frame):
             action = q_table.loc[state, possibleMoves].index[q_table.loc[state, possibleMoves].values.argmax()]
         next_state = ut.nextState(state, action)
         if agent.buttonType == ButtonType.Runner:
-            reward = ut.getRunnerReward(self.runner.position(), self.chaser1.position(), self.chaser2.position())
+            #reward = ut.getRunnerReward(self.runner.position(), self.chaser1.position(), self.chaser2.position())
+            reward = ut.getRunnerReward(next_state, self.chaser1.position(), self.chaser2.position())
         elif agent.buttonType == ButtonType.Chaser1:
-            reward = ut.getChaserReward(self.runner.position(), self.chaser1.position())
+            #reward = ut.getChaserReward(self.runner.position(), self.chaser1.position())
+            reward = ut.getChaserReward(self.runner.position(), next_state)
         else:
-            reward = ut.getChaserReward(self.runner.position(), self.chaser2.position())
+            #reward = ut.getChaserReward(self.runner.position(), self.chaser2.position())
+            reward = ut.getChaserReward(self.runner.position(), next_state)
         current_q = agent.q_table.loc[state, action]
         next_q = agent.q_table.loc[next_state, :].max()
         agent.q_table.loc[state, action] += self.alpha * (reward + self.gamma * next_q - current_q)
@@ -613,3 +614,5 @@ class Board(tk.Frame):
 
         self.moveAgent(next_state[0], next_state[1], agent, action)
 
+        if self.runner.position() in [self.chaser1.position(), self.chaser2.position()]:
+            self.isRunnerCaught = True
