@@ -83,7 +83,7 @@ def getRunnerReward(runner, chaser1, chaser2):
         reward = -5
     elif md in [1, 2]:
         reward = md - 3
-    elif md >= 6:
+    elif md >= 8:
         reward = 1
     else:
         reward = 0

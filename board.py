@@ -10,7 +10,7 @@ from Enums import ButtonType, WaitingJob, PlaceConfig, BehaviorConfig
 from agent import Agent
 
 class Board(tk.Frame):
-    def __init__(self, boxHeight, boxWidth, boxMargin, rowCount, columnCount, master=None, alpha=0.1, gamma=0.9, epsilon=0.1, episode_count=500, game_sleep=0.1, training_sleep=0.0001):
+    def __init__(self, boxHeight, boxWidth, boxMargin, rowCount, columnCount, master=None, alpha=0.1, gamma=0.9, epsilon=0.1, episode_count=500, game_sleep=0.1, training_sleep=0.01):
         super().__init__(master)
         self.colorBlack = '#000000'
         self.windowTitle = 'Run Forrest Run!! The RL Game'
@@ -97,12 +97,12 @@ class Board(tk.Frame):
             columns=['NO MOVE', 'NORTH', 'EAST', 'SOUTH', 'WEST']
         )
 
-        self.runner = Agent(0, 0, ButtonType.Runner, self.default_q_table.copy())
-        self.chaser1 = Agent(0, 0, ButtonType.Chaser1, self.default_q_table.copy())
-        self.chaser2 = Agent(0, 0, ButtonType.Chaser2, self.default_q_table.copy())
-        #self.runner = Agent(0, 0, ButtonType.Runner, pd.read_pickle('pickle/runner_' + str(self.rowCount) + '_' + str(self.columnCount) + '.pkl'))
-        #self.chaser1 = Agent(0, 0, ButtonType.Chaser1, pd.read_pickle('pickle/chaser1_' + str(self.rowCount) + '_' + str(self.columnCount) + '.pkl'))
-        #self.chaser2 = Agent(0, 0, ButtonType.Chaser2, pd.read_pickle('pickle/chaser2_' + str(self.rowCount) + '_' + str(self.columnCount) + '.pkl'))
+        #self.runner = Agent(0, 0, ButtonType.Runner, self.default_q_table.copy())
+        #self.chaser1 = Agent(0, 0, ButtonType.Chaser1, self.default_q_table.copy())
+        #self.chaser2 = Agent(0, 0, ButtonType.Chaser2, self.default_q_table.copy())
+        self.runner = Agent(0, 0, ButtonType.Runner, pd.read_pickle('pickle/runner_' + str(self.rowCount) + '_' + str(self.columnCount) + '.pkl'))
+        self.chaser1 = Agent(0, 0, ButtonType.Chaser1, pd.read_pickle('pickle/chaser1_' + str(self.rowCount) + '_' + str(self.columnCount) + '.pkl'))
+        self.chaser2 = Agent(0, 0, ButtonType.Chaser2, pd.read_pickle('pickle/chaser2_' + str(self.rowCount) + '_' + str(self.columnCount) + '.pkl'))
 
         self.runnerDefaultPlace = (1, 1)
         self.chaser1DefaultPlace = (self.rowCount, self.columnCount)
@@ -324,8 +324,10 @@ class Board(tk.Frame):
         self.chaser2.score = 0
 
     def trainAgents(self, event):
+        self.isTraining = True
         for i in range(self.episode_count):
             self.handleEvent(event)
+        self.isTraining = False
 
     def setWaitingJob(self):
         if self.waitingJob == WaitingJob.ApplyConfiguration:
